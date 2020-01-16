@@ -1,0 +1,14 @@
+/.idea/
+/target/
+/out/
+*.iml
+.classpath
+.project
+/bin/
+/WebRoot/WEB-INF/classes
+/.myeclipse/
+
+*.exe
+dispatch
+
+lastupdate.tmp
