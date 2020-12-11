@@ -14,4 +14,6 @@ func init() {
 	beego.Router("/file/Delete", &controllers.MainController{}, "DELETE:Delete")
 	beego.Router("/file/newDir", &controllers.MainController{}, "PUT:NewDir")
 	beego.Router("/file/UploadFile", &controllers.MainController{}, "POST:UploadFile")
+
+	beego.Router("/getDanmuServer", &controllers.MainController{}, "GET:GetDanmuServer")
 }

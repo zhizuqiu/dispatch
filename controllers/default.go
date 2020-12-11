@@ -168,3 +168,20 @@ func (this *MainController) NewDir() {
 
 	this.handleJson(models.Success(nil))
 }
+
+func (this *MainController) GetDanmuServer() {
+	danmuHost := os.Getenv("DANMU_HOST")
+	if danmuHost == "" {
+		danmuHost = "localhost"
+	}
+	danmuPort := os.Getenv("DANMU_PORT")
+	if danmuPort == "" {
+		danmuPort = "9090"
+	}
+	var result = make(map[string]interface{})
+	result["danmuHost"] = danmuHost
+	result["danmuPort"] = danmuPort
+	this.Data["json"] = result
+	this.ServeJSON()
+	return
+}

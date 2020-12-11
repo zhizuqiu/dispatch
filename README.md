@@ -4,6 +4,11 @@
 
 ![](images.jpg)
 
+## dev
+```
+DANMU_HOST=localhost DANMU_PORT=9090 bee run
+```
+
 ## build
 
 amd64:

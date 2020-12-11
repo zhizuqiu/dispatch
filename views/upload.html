@@ -5,7 +5,8 @@
     <title>upload</title>
 </head>
 <!--引入CSS-->
-<link rel="stylesheet" type="text/css" href="/static/webuploader-0.1.5/webuploader.css">
+<link rel="stylesheet" type="text/css" href="static/webuploader-0.1.5/webuploader.css">
+<link rel="stylesheet" type="text/css" href="static/danmu-comment/danmu-comment.css">
 <style>
     #upload-container, #upload-list {
         width: 100%;
@@ -57,21 +58,27 @@
     .btn-retry:hover {
         color: green;
     }
+
+    table tbody tr:hover {
+        background-color: #e8e7e7;
+    }
+
 </style>
 
 <body>
 
-<div style="width:50%;height:1000px;float:left;">
+<div style="width:64%;float:left;">
     <div style="margin-right: 10px;float:left;">
         <a id="newDir" style="cursor:pointer;color: #00a2d4"><u>新建目录</u></a>
+        <a style="margin-left: 10px">|</a>
     </div>
-    <div id="breadcrumb" style="">
+    <div id="breadcrumb" style="width:100%;">
     </div>
 
-    <table id="list">
+    <table id="list" style="width:100%;" class="table">
     </table>
 </div>
-<div style="width:40%;float:left;margin-left:4px;">
+<div style="width:35%;float:left;margin-left:4px;">
     <div id="upload-container">
         <span>点击或将文件拖拽至此上传</span>
     </div>
@@ -80,16 +87,66 @@
     <button id="picker" style="display: none;">点击上传文件</button>
 </div>
 
+<div style="position:absolute;right:0;bottom:0;border:1px solid #aaa">
+    <div style="padding: 2px;font-size: 5px;color: #C9C5C5">
+        <label>弹幕服务器连接状态：</label><label id="danmuStatus">Disconnected</label><br>
+        <label>敲击回车键输入弹幕</label>
+    </div>
+</div>
+
 </body>
-<script src="/static/jquery/jquery-2.0.2.min.js"></script>
-<script src="/static/webuploader-0.1.5/webuploader.js"></script>
-<script src="/static/clipboard/clipboard.min.js"></script>
+<script src="static/jquery/jquery-2.0.2.min.js"></script>
+<script src="static/webuploader-0.1.5/webuploader.js"></script>
+<script src="static/clipboard/clipboard.min.js"></script>
+<script src="static/danmu-comment/danmu-comment.js"></script>
 <script>
 
     $(document).ready(function () {
         initLi();
         initBreadcrumb();
+        initDanmu();
     });
+    var danmu = new Danmu_comment();
+
+    function initDanmu() {
+
+        $.ajax({
+            //请求方式
+            type: "GET",
+            //请求的媒体类型
+            contentType: "application/json;charset=UTF-8",
+            //请求地址
+            url: "getDanmuServer",
+            //请求成功
+            success: function (result) {
+                startDanmu(result.danmuHost,result.danmuPort)
+            },
+            //请求失败，包含具体的错误信息
+            error: function (e) {
+                console.log(e.status);
+                console.log(e.responseText);
+            }
+        });
+
+    }
+
+    function startDanmu(host,port) {
+        $("#danmuStatus").html("Connecting");
+        danmu = new Danmu_comment();
+        danmu.init(host,port,"dispatch","1","13","1");
+        danmu.onEvent('onopen',function (event) {
+            console.log(event);
+            $("#danmuStatus").html("Connected");
+        });
+        danmu.onEvent('onmessage',function (event) {
+            console.log(event);
+        });
+        danmu.onEvent('onclose',function (event) {
+            console.log(event);
+            $("#danmuStatus").html("Disconnected");
+            setTimeout(function(){startDanmu(host,port)},5000);
+        });
+    }
 
     function initBreadcrumb() {
         var breadcrumbDom = $('#breadcrumb');
@@ -122,7 +179,7 @@
             //请求的媒体类型
             contentType: "application/json;charset=UTF-8",
             //请求地址
-            url: "/file/List?Path=" + getQueryString("Path"),
+            url: "file/List?Path=" + getQueryString("Path"),
             //请求成功
             success: function (result) {
                 createLi(result);
@@ -136,20 +193,31 @@
     }
 
     function createLi(result) {
+        console.log(result);
         var list = $('#list');
         list.html("");
-        list.append('<tr><th style="width:500px;text-align:left;">Name</th><th style="width:200px;text-align:left;">LastModified</th><th style="width:100px;text-align:left;">length</th><th style="text-align:left;">operate</th></tr>');
+        list.append('<thead><tr><th style="width:60%;text-align:left;">Name</th><th style="width:20%;text-align:left;">LastModified</th><th style="width:10%;text-align:left;">length</th><th style="width:5%;text-align:left;">operate</th></tr></thead>');
         for (var i = 0; i < result.length; i++) {
             if (!result[i].IsDir) {
-                list.append('<tr><td style="border-bottom: 1px solid #a9a9a9;"><a href="dispatch' + result[i].Path + '">' + result[i].Name + '</a></td><td style="border-bottom: 1px solid #a9a9a9;">' + result[i].LastModified + '</td><td style="border-bottom: 1px solid #a9a9a9;">' + result[i].Length + '</td><td style="border-bottom: 1px solid #a9a9a9;"><img title="删除" src="/static/img/alter_delete.png" onclick=\'deleteLi(\"' + result[i].Path + '\",' + result[i].IsDir + ')\' style="margin-left: 10px;cursor:pointer;"/><img title="复制下载地址" class="clip" data-clipboard-text="' + getDownPath(result[i].Path) + '" src="/static/img/url.png" style="margin-left: 10px;cursor:pointer;"/></td></tr>');
+                list.append('<tbody><tr><td style="border-bottom: 1px solid #a9a9a9;"><a style="padding-left: 23px;" href="dispatch' + result[i].Path + '">' + result[i].Name + '</a></td><td style="border-bottom: 1px solid #a9a9a9;">' + result[i].LastModified + '</td><td style="border-bottom: 1px solid #a9a9a9;">' + result[i].Length + '</td><td style="border-bottom: 1px solid #a9a9a9;"><img title="删除" src="static/img/alter_delete.png" onclick=\'deleteLi(\"' + result[i].Path + '\",' + result[i].IsDir + ')\' style="margin-left: 10px;cursor:pointer;"/><img title="复制下载地址" class="clip" data-clipboard-text="' + getDownPath(result[i].Path) + '" src="static/img/url.png" style="margin-left: 10px;cursor:pointer;"/></td></tr></tbody>');
             } else {
-                list.append('<tr><td style="border-bottom: 1px solid #a9a9a9;"><a href="upload?Path=' + result[i].Path + '">' + result[i].Name + '</a></td><td style="border-bottom: 1px solid #a9a9a9;">' + result[i].LastModified + '</td><td style="border-bottom: 1px solid #a9a9a9;">' + result[i].Length + '</td><td style="border-bottom: 1px solid #a9a9a9;"><img title="删除" src="/static/img/alter_delete.png" onclick=\'deleteLi(\"' + result[i].Path + '\",' + result[i].IsDir + ')\' style="margin-left: 10px;cursor:pointer;"/><img title="复制下载地址" class="clip" data-clipboard-text="' + getDownPath(result[i].Path) + '" src="/static/img/url.png" style="margin-left: 10px;cursor:pointer;"/></td></tr>');
+                list.append('<tbody><tr><td style="border-bottom: 1px solid #a9a9a9;"><a href="upload?Path=' + result[i].Path + '"><img src="static/img/dir.png" style="vertical-align: middle;height:23px" alt=""/>' + result[i].Name + '</a></td><td style="border-bottom: 1px solid #a9a9a9;">' + result[i].LastModified + '</td><td style="border-bottom: 1px solid #a9a9a9;">' + result[i].Length + '</td><td style="border-bottom: 1px solid #a9a9a9;"><img title="删除" src="static/img/alter_delete.png" onclick=\'deleteLi(\"' + result[i].Path + '\",' + result[i].IsDir + ')\' style="margin-left: 10px;cursor:pointer;"/><img title="复制下载地址" class="clip" data-clipboard-text="' + getDownPath(result[i].Path) + '" src="static/img/url.png" style="margin-left: 10px;cursor:pointer;"/></td></tr></tbody>');
             }
         }
     }
 
     function getDownPath(path) {
-        return "http://" + window.location.host + "/dispatch" + path;
+        var url = window.location.origin + window.location.pathname;
+        var i = url.length;
+        var endIndex = url.length;
+        for (; i >= 0; i -= 1) {
+            if (url.charAt(i) === '/') {
+                endIndex = i;
+                break;
+            }
+        }
+        var realUrl = url.substring(0, endIndex);
+        return realUrl + "/dispatch" + path;
     }
 
     var clipboard = new Clipboard('.clip');
@@ -175,7 +243,7 @@
                 //请求的媒体类型
                 contentType: "application/json;charset=UTF-8",
                 //请求地址
-                url: "/file/Delete?Path=" + id + "&IsDir=" + isDir,
+                url: "file/Delete?Path=" + id + "&IsDir=" + isDir,
                 //请求成功
                 success: function (result) {
                     initLi();
@@ -201,7 +269,7 @@
                 //请求的媒体类型
                 contentType: "application/json;charset=UTF-8",
                 //请求地址
-                url: "/file/newDir?Path=" + path,
+                url: "file/newDir?Path=" + path,
                 //请求成功
                 success: function (result) {
                     initLi();
@@ -219,8 +287,8 @@
     });
     var uploader = WebUploader.create({
         auto: true,// 选完文件后，是否自动上传。
-        swf: '/static//Uploader.swf',// swf文件路径
-        server: '/file/UploadFile?Path=' + getQueryString("Path"), // 文件接收服务端。
+        swf: 'static//Uploader.swf',// swf文件路径
+        server: 'file/UploadFile?Path=' + getQueryString("Path"), // 文件接收服务端。
         dnd: '#upload-container',
         pick: '#picker',// 内部根据当前运行是创建，可能是input元素，也可能是flash. 这里是div的id
         multiple: true, // 选择多个
