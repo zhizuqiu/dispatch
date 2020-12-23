@@ -63,6 +63,20 @@
         background-color: #e8e7e7;
     }
 
+    .bootom_right {
+        position: fixed;
+        display: flex;
+        flex-direction: column;
+        right: 5px;
+        bottom: 5px;
+        z-index: 1000;
+        padding: 3px 3px 0 3px;
+        border-radius: 3px;
+        border: 1px solid #ddd;
+        background: #fff;
+        width: 220px;
+    }
+
 </style>
 
 <body>
@@ -87,7 +101,7 @@
     <button id="picker" style="display: none;">点击上传文件</button>
 </div>
 
-<div style="position:absolute;right:0;bottom:0;border:1px solid #aaa">
+<div class="bootom_right">
     <div style="padding: 2px;font-size: 5px;color: #C9C5C5">
         <label>弹幕服务器连接状态：</label><label id="danmuStatus">Disconnected</label><br>
         <label>敲击回车键输入弹幕</label>
@@ -119,7 +133,7 @@
             url: "getDanmuServer",
             //请求成功
             success: function (result) {
-                startDanmu(result.danmuHost,result.danmuPort)
+                startDanmu(result.danmuHost, result.danmuPort)
             },
             //请求失败，包含具体的错误信息
             error: function (e) {
@@ -130,21 +144,23 @@
 
     }
 
-    function startDanmu(host,port) {
+    function startDanmu(host, port) {
         $("#danmuStatus").html("Connecting");
         danmu = new Danmu_comment();
-        danmu.init(host,port,"dispatch","1","13","1");
-        danmu.onEvent('onopen',function (event) {
+        danmu.init(host, port, "dispatch", "1", "13", "1");
+        danmu.onEvent('onopen', function (event) {
             console.log(event);
             $("#danmuStatus").html("Connected");
         });
-        danmu.onEvent('onmessage',function (event) {
+        danmu.onEvent('onmessage', function (event) {
             console.log(event);
         });
-        danmu.onEvent('onclose',function (event) {
+        danmu.onEvent('onclose', function (event) {
             console.log(event);
             $("#danmuStatus").html("Disconnected");
-            setTimeout(function(){startDanmu(host,port)},5000);
+            setTimeout(function () {
+                startDanmu(host, port)
+            }, 5000);
         });
     }
 
@@ -159,16 +175,20 @@
             return
         }
         var pathList = path.split("/");
-        console.log(pathList);
         var nowPath = "";
+        breadcrumbDom.append('<label style="margin-left: 5px">/</label>');
         for (let i = 0; i < pathList.length; i++) {
-            if (pathList[i] === "") {
-                breadcrumbDom.append('<label style="margin-left: 5px">/</label>');
-                nowPath = nowPath + "/"
-            } else {
-                nowPath = nowPath + pathList[i];
-                breadcrumbDom.append('<a href=upload?Path=' + nowPath + '/ style="margin-left: 5px">' + pathList[i] + '</a>');
+            if (pathList[i] !== "") {
+                nowPath = nowPath + "/" + pathList[i];
+                if (i !== 1 && i !== pathList.length - 1) {
+                    breadcrumbDom.append('<label style="margin-left: 5px">/</label>');
+                }
+                breadcrumbDom.append('<a href="upload?Path=' + nowPath + '/" style="margin-left: 5px">' + pathList[i] + '</a>');
             }
+        }
+        if (nowPath !== "/") {
+            nowPath = nowPath + "/"
+            breadcrumbDom.append('<label style="margin-left: 5px">/</label>');
         }
     }
 
